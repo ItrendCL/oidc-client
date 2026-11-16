@@ -60,9 +60,8 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.skip_ci.outputs.canSkip != 'true' && !github.event.pull_request.head.repo.fork
     steps:
+      # The default GITHUB_TOKEN is enough: the job no longer pushes to main.
       - uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.GIT_TOKEN }}
           
       - name: Determine Alpha, Beta or Release
         id: which_tag
@@ -249,15 +248,10 @@ jobs:
           cat package.json
         working-directory: ./packages/react-oidc
           
-      - name: Commit updates package.json
-        uses: stefanzweifel/git-auto-commit-action@v4
-        if: github.ref == 'refs/heads/main' && steps.which_tag.outputs.tag == 'release'
-        with:
-          commit_message: "[skip ci] Update version package.json"
-          commit_user_name: GitHub
-          commit_user_email: github-action@bot.com
-          commit_author: GitHub <github-action@bot.com>
-          push_options: '--force'
+      # The bumped package.json/version.ts are not committed back to main:
+      # main is protected (no direct or force pushes). The published version
+      # comes from the tag pushed by "Bump version and push tag" (the source
+      # of truth for the next version), so the versions in git are not used.
       
 
       - name: SonarCloud Scan
